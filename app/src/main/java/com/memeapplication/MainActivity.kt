@@ -1,8 +1,8 @@
 package com.memeapplication
 
-import android.app.ProgressDialog
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -43,11 +43,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun getMemeApiData() {
 
-        val progressDialog = ProgressDialog(this).apply {
-            setMessage("Wait while loading ...")
-            setCancelable(false) // optional
-            show() // <-- show dialog
-        }
+//        val progressDialog = ProgressDialog(this).apply {
+//            setMessage("Wait while loading ...")
+//            setCancelable(false) // optional
+//            show() // <-- show dialog
+//        }
+
+        binding.progressBar.visibility = View.VISIBLE
+        binding.progressBar.isEnabled = false
 
         val queue = Volley.newRequestQueue(this)
 
@@ -69,15 +72,16 @@ class MainActivity : AppCompatActivity() {
                     .error(R.drawable.ic_launcher_foreground)
                     .into(binding.imageView)
 
-                Toast.makeText(this, "Data & View loaded", Toast.LENGTH_SHORT).show()
 
-                progressDialog.dismiss()
+                binding.progressBar.visibility = View.GONE
+                binding.progressBar.isEnabled = true
+
+//                progressDialog.dismiss()
             },
             { error ->
                 error.localizedMessage?.let { Log.e("Meme API Error: ", it) }
                 Toast.makeText(this, error.localizedMessage, Toast.LENGTH_SHORT).show()
-                progressDialog.dismiss()
-
+//                progressDialog.dismiss()
             })
 
         queue.add(stringRequest)
