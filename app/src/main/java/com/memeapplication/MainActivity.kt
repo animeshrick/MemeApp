@@ -3,14 +3,12 @@ package com.memeapplication
 import android.app.ProgressDialog
 import android.os.Bundle
 import android.util.Log
-import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.android.volley.Request
-import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.bumptech.glide.Glide
@@ -20,6 +18,8 @@ import org.json.JSONObject
 class MainActivity : AppCompatActivity() {
 
     val url = "https://meme-api.com/gimme"
+    val dummyImage =
+        "https://tse2.mm.bing.net/th/id/OIP.-a13rG_rPZnTuMfn5pj30wHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"
     lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,26 +54,32 @@ class MainActivity : AppCompatActivity() {
         val stringRequest = StringRequest(
             Request.Method.GET, url,
             { response ->
-                // Display the first 500 characters of the response string.
-//                textView.text = "Response is: ${response.substring(0, 500)}"
-                Log.v("Meme Response: ",response.toString())
+                Log.v("Meme Response: ", response.toString())
 
-                var responseObject = JSONObject(response)
-                binding.title.text = responseObject.getString("title")
-                binding.author.text = responseObject.getString("author")
+                val responseObject = JSONObject(response)
 
-                Glide.with(this).load(responseObject.getString("url")).into(binding.imageView)
+                binding.title.text = responseObject.optString("title")
+                    .takeIf { it.isNotBlank() } ?: "Dummy Title"
+                binding.author.text = responseObject.optString("author")
+                    .takeIf { it.isNotBlank() } ?: "Dummy Author"
+
+                Glide.with(this)
+                    .load(responseObject.optString("url").takeIf { it.isNotBlank() } ?: dummyImage)
+                    .placeholder(R.drawable.ic_launcher_background)
+                    .error(R.drawable.ic_launcher_foreground)
+                    .into(binding.imageView)
+
+                Toast.makeText(this, "Data & View loaded", Toast.LENGTH_SHORT).show()
+
                 progressDialog.dismiss()
             },
-            {
-                error->
-                Log.e("Meme API Error:", error.localizedMessage)
-                Toast.makeText(this, error.localizedMessage,Toast.LENGTH_SHORT).show()
+            { error ->
+                error.localizedMessage?.let { Log.e("Meme API Error: ", it) }
+                Toast.makeText(this, error.localizedMessage, Toast.LENGTH_SHORT).show()
                 progressDialog.dismiss()
 
             })
 
-// Add the request to the RequestQueue.
         queue.add(stringRequest)
 
     }
