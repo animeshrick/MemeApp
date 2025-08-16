@@ -14,6 +14,9 @@ import com.android.volley.toolbox.Volley
 import com.bumptech.glide.Glide
 import com.memeapplication.databinding.ActivityMainBinding
 import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
 
@@ -36,9 +39,10 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        getMemeApiData()
+//        getMemeApiData()
+        getMemeApiDataRetrofit()
 
-        binding.reloadButton.setOnClickListener { getMemeApiData() }
+        binding.reloadButton.setOnClickListener { getMemeApiDataRetrofit() }
     }
 
     private fun getMemeApiData() {
@@ -86,5 +90,44 @@ class MainActivity : AppCompatActivity() {
 
         queue.add(stringRequest)
 
+    }
+
+    private fun getMemeApiDataRetrofit() {
+        binding.progressBar.visibility = View.VISIBLE
+        binding.progressBar.isEnabled = false
+
+        RetrofitInstance.apiInterface.getMemeApiData().enqueue(object : Callback<MemeDataClass?> {
+            override fun onResponse(
+                call: Call<MemeDataClass?>,
+                response: Response<MemeDataClass?>
+            ) {
+                if (response.isSuccessful && response.body() != null) {
+                    val memeData = response.body()!!
+                    Log.v("Retrofit Meme Response: ", memeData.toString())
+
+                    binding.title.text = memeData.title.takeIf { it.isNotBlank() } ?: "Dummy Title"
+                    binding.author.text =
+                        memeData.author.takeIf { it.isNotBlank() } ?: "Dummy Author"
+
+                    Glide.with(this@MainActivity)
+                        .load(memeData.url.takeIf { it.isNotBlank() } ?: dummyImage)
+                        .placeholder(R.drawable.ic_launcher_background)
+                        .error(R.drawable.ic_launcher_foreground)
+                        .into(binding.imageView)
+                } else {
+                    Toast.makeText(this@MainActivity, "Failed to fetch response", Toast.LENGTH_SHORT)
+                        .show()
+                }
+                binding.progressBar.visibility = View.GONE
+                binding.progressBar.isEnabled = true
+            }
+
+            override fun onFailure(call: Call<MemeDataClass?>, t: Throwable) {
+                t.localizedMessage?.let { Log.e("Retrofit Meme API Error: ", it) }
+                Toast.makeText(this@MainActivity, t.localizedMessage, Toast.LENGTH_SHORT).show()
+                binding.progressBar.visibility = View.GONE
+                binding.progressBar.isEnabled = true
+            }
+        })
     }
 }
